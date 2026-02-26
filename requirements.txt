@@ -1,0 +1,39 @@
+# --- CORE & AI ---
+sentence-transformers
+chromadb
+google-generativeai
+openai
+groq
+requests
+httpx
+python-dotenv
+
+# --- UI FRAMEWORK ---
+streamlit
+streamlit-antd-components
+streamlit-extras
+pandas
+
+# --- VIDEO ENGINE ---
+moviepy>=2.0.0.dev2
+jinja2
+opencv-python
+
+# --- AUDIO ENGINE ---
+elevenlabs
+edge-tts
+pydub
+ffmpeg-python
+
+# --- LOGIC & ANIMATION ENGINE ---
+manim
+graphviz
+pycairo
+manimpango
+svgelements
+
+# --- UTILS ---
+numpy
+tqdm
+scikit-learn
+watchdog

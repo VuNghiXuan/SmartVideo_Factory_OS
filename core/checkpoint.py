@@ -1,0 +1,1 @@
+# State manager: Luu tien do render

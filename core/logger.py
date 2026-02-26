@@ -1,0 +1,1 @@
+# Ghi log chi tiet loi render

@@ -1,0 +1,10 @@
+{
+    "total_courses": 1,
+    "courses": [
+        {
+            "id": "lớp_học_ai_của_vũ",
+            "name": "lớp_học_ai_của_vũ",
+            "path": "storage/courses/lớp_học_ai_của_vũ"
+        }
+    ]
+}
