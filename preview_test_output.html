@@ -1,0 +1,71 @@
+<!DOCTYPE html><html><head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <style>
+            body { 
+                background: #1e1e1e; width: 1920px; height: 1080px; 
+                display: flex; justify-content: center; align-items: center; 
+                font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0;
+                overflow: hidden;
+            }
+            .window { 
+                background: white; width: 1700px; height: 950px;
+                border-radius: 8px; overflow: hidden; 
+                box-shadow: 0 50px 100px rgba(0,0,0,0.8);
+                display: flex; flex-direction: column;
+                border: 1px solid #444;
+            }
+            .win-title {
+                background: #f3f3f3; height: 35px; display: flex; 
+                align-items: center; justify-content: space-between; padding: 0 15px;
+                font-size: 12px; color: #333; border-bottom: 1px solid #ddd;
+            }
+            .win-buttons { display: flex; gap: 15px; }
+            .win-buttons i { font-size: 14px; color: #666; }
+            
+            /* Excel Styles */
+            .excel-header { background: #107c10; color: white; padding: 10px 20px; display: flex; align-items: center; gap: 20px; }
+            .excel-menu { background: #f3f3f3; padding: 5px 20px; display: flex; gap: 20px; font-size: 13px; border-bottom: 1px solid #ddd; }
+            .excel-menu span { color: #333; padding: 2px 5px; }
+            .excel-menu .active { border-bottom: 3px solid #107c10; font-weight: bold; }
+            .formula-bar { background: white; padding: 5px 15px; display: flex; align-items: center; border-bottom: 1px solid #ccc; gap: 10px; font-size: 14px; }
+            .formula-bar .cell-addr { border-right: 1px solid #ddd; padding-right: 10px; font-weight: bold; min-width: 50px; color: #107c10; }
+            .grid-container { flex-grow: 1; overflow: hidden; background: white; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th { background: #f3f3f3; border: 1px solid #bbb; width: 45px; font-size: 12px; color: #666; height: 25px; font-weight: normal; }
+            td { border: 1px solid #ddd; padding: 8px; font-size: 16px; height: 30px; }
+            .active-cell { border: 2px solid #107c10 !important; }
+            .excel-footer { background: #f3f3f3; height: 35px; border-top: 1px solid #ccc; display: flex; align-items: center; padding: 0 20px; gap: 20px; font-size: 12px; }
+            .sheet-tab { color: #107c10; font-weight: bold; border-bottom: 3px solid #107c10; height: 100%; display: flex; align-items: center; padding: 0 10px; }
+
+            /* Chrome Styles */
+            .chrome-tabs { background: #dee1e6; padding: 8px 10px 0; display: flex; gap: 5px; }
+            .chrome-tab { background: white; padding: 8px 20px; border-radius: 8px 8px 0 0; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+            .chrome-address { background: white; padding: 8px 20px; border-bottom: 1px solid #ddd; display: flex; align-items: center; gap: 15px; }
+            .addr-bar { background: #f1f3f4; flex-grow: 1; padding: 5px 15px; border-radius: 20px; font-size: 14px; color: #5f6368; }
+
+            /* VSC Styles */
+            .vsc-content { display: flex; flex-grow: 1; background: #1e1e1e; color: #d4d4d4; }
+            .vsc-sidebar { width: 250px; background: #252526; border-right: 1px solid #333; padding: 15px; font-size: 13px; }
+            .vsc-editor { flex-grow: 1; padding: 30px; font-family: 'Consolas', monospace; font-size: 24px; line-height: 1.5; }
+        </style>
+        </head><body>
+            <div class="window">
+                <div class="win-title">
+                    <span><i class="fa-solid fa-file-excel" style="color:#107c10"></i> bai_tap_xlwings.xlsx - Excel</span>
+                    <div class="win-buttons"><i class="fa-solid fa-minus"></i><i class="fa-regular fa-square"></i><i class="fa-solid fa-xmark"></i></div>
+                </div>
+                <div class="excel-header"><b style="font-size:20px;">Excel</b></div>
+                <div class="excel-menu"><span class="active">Home</span><span>Insert</span><span>Data</span><span>Review</span></div>
+                <div class="formula-bar">
+                    <div class="cell-addr">A1</div>
+                    <i class="fa-solid fa-italic" style="color:#ccc">fx</i>
+                    <div style="flex-grow:1;">Hôm nay chúng ta sẽ dùng thư viện xlwings để ghi dữ liệu vào Excel.</div>
+                </div>
+                <div class="grid-container">
+                    <table>
+                        <tr><th></th><th>A</th> <th>B</th> <th>C</th> <th>D</th> <th>E</th></tr>
+                        <tr><th>1</th><td class="active-cell">Hôm nay chúng ta sẽ dùng thư viện xlwings để ghi dữ liệu vào Excel.</td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>2</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>3</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>4</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>5</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>6</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>7</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>8</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>9</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>10</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>11</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>12</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>13</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr><tr><th>14</th><td ></td><td ></td><td ></td><td ></td><td ></td></tr>
+                    </table>
+                </div>
+                <div class="excel-footer"><div class="sheet-tab">Sheet1</div><span style="color:#666">Sheet2</span></div>
+            </div></body></html>

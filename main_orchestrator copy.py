@@ -7,15 +7,15 @@ import traceback
 from config import config
 from engines.voice_engine import VoiceEngine
 from engines.video_engine import VideoEngine
-# Bỏ import SceneGenerator nếu mày không dùng tới nữa để nhẹ máy
 from engines.scene_generator import SceneGenerator
+from moviepy.editor import AudioFileClip
 from core.nlp_processor import NLPProcessor 
 
 class MainOrchestrator:
     def __init__(self):
         self.voice_eng = VoiceEngine()
         self.video_eng = VideoEngine()
-        self.scene_gen = SceneGenerator() # Để đây cho vui thôi chứ không gọi nữa
+        self.scene_gen = SceneGenerator()
         self.nlp = NLPProcessor() 
 
     # =================================================================
@@ -29,16 +29,13 @@ class MainOrchestrator:
 
             # Bước 2: Phân tích kịch bản thành danh sách cảnh
             scenes = self._parse_script_data(script_data)
-            if not scenes: 
-                print("❌ Kịch bản rỗng hoặc sai định dạng!")
-                return None
+            if not scenes: return None
             
             print(f"📊 Bắt đầu sản xuất: {len(scenes)} cảnh.")
 
             # Bước 3: Vòng lặp sản xuất từng cảnh
             scene_clips = []
             for i, scene_data in enumerate(scenes):
-                # Gọi hàm sản xuất cảnh với đầy đủ thông tin
                 clip = await self._produce_single_scene(i, scene_data, workspace, clean_lesson_id, voice)
                 if clip:
                     scene_clips.append(clip)
@@ -83,6 +80,7 @@ class MainOrchestrator:
             except: return [{"text": script_data, "content": script_data}]
 
         if isinstance(script_data, dict):
+            # Tìm danh sách cảnh trong các key phổ biến
             scenes = script_data.get('sections') or script_data.get('scenes') or script_data.get('lessons')
             if not scenes:
                 for v in script_data.values():
@@ -91,76 +89,64 @@ class MainOrchestrator:
             
         return script_data if isinstance(script_data, list) else []
 
-    async def _produce_single_scene(self, index, scene, workspace, lesson_id, voice):    
-        """Quy trình sản xuất 1 cảnh: Voice -> VideoEngine"""
+    async def _produce_single_scene(self, index, scene, workspace, lesson_id, voice):
+        """Quy trình sản xuất 1 cảnh: Voice -> Dựng Clip trực tiếp bằng VideoEngine"""
         try:
-            # 1. Trích xuất dữ liệu từ JSON
+            # 1. Trích xuất dữ liệu từ kịch bản
             if isinstance(scene, dict):
                 text = scene.get('text', '')
                 raw_content = scene.get('content', text)
-                ui_type = scene.get('ui_type', 'vsc')
-                # Nhặt các biến này ra để dùng
-                file_name = scene.get('file_name', 'script.py')
-                title = scene.get('title', lesson_id)
+                ui_type = scene.get('ui_type')
             else:
                 text = raw_content = str(scene)
-                ui_type = 'vsc'
-                file_name = 'script.py'
-                title = lesson_id
+                ui_type = None
 
             if not text.strip(): return None
 
-            # 2. Tạo Voice
+            # 2. Tạo Voice (Audio)
             audio_path = os.path.join(workspace, f"audio_{index}.mp3")
             await self.voice_eng.generate_voice(text, audio_path, voice=voice)
 
-            # 3. Predict UI
+            # 3. Dự đoán loại giao diện (VSC, CMD, Excel, Doc) nếu chưa có
             if not ui_type or ui_type == "default":
                 ui_type = self.nlp.predict_action(f"{raw_content} {text}")
 
-            # 4. GỌI VIDEO ENGINE: Truyền tham số cụ thể, bỏ **kwargs đi
-            # Vì create_scene bên VideoEngine nhận **kwargs, 
-            # nên file_name mày truyền ở đây sẽ tự động chui vào params của Drawer.
+            # 4. Tiền xử lý nội dung cho VSC (nếu cần tách Editor và Terminal)
+            final_content = raw_content
+            if ui_type == "vsc" and hasattr(self.nlp, 'split_editor_terminal'):
+                final_content = self.nlp.split_editor_terminal(raw_content)
+
+            # 5. DỰNG CLIP (Bỏ qua SceneGenerator, gọi thẳng VideoEngine)
+            # VideoEngine giờ đã tích hợp InterfaceDrawers để tự vẽ mọi thứ
             return self.video_eng.create_scene(
-                text=text,
-                audio_path=audio_path,
-                scene_type=ui_type,
-                content=raw_content,
-                index=index,
-                workspace=workspace,
-                title=title,      # Truyền biến đã nhặt ở bước 1
-                file_name=file_name # Truyền biến đã nhặt ở bước 1
+                text=text,           # Phụ đề
+                audio_path=audio_path, 
+                scene_type=ui_type,  # "vsc", "cmd", "excel", hoặc "doc"
+                content=final_content,
+                title=lesson_id      # Dùng làm tiêu đề nếu là cảnh Document
             )
+
         except Exception as e:
             print(f"⚠️ Lỗi sản xuất cảnh {index+1}: {e}")
             traceback.print_exc()
             return None
 
-    
     def _assemble_final_video(self, scene_clips, lesson_id, output_dir, progress_callback):
         """Gộp các cảnh và đóng gói video"""
         if not scene_clips:
             print("❌ Không có cảnh nào để gộp!")
             return None
 
-        print(f"\n📦 Đang gộp {len(scene_clips)} cảnh từ file tạm...")
+        print(f"\n📦 Đang gộp {len(scene_clips)} cảnh...")
+        output_filename = f"{lesson_id}.mp4"
         
-        # Đảm bảo tên file không chứa ký tự lạ hoặc dấu tiếng Việt quá phức tạp
-        import re
-        clean_name = re.sub(r'[^\w\s-]', '', lesson_id).strip().replace(' ', '_')
-        output_filename = f"{clean_name}.mp4"
-        
-        # SỬA TẠI ĐÂY: Đổi scene_clips= thành scene_paths= 
-        # để khớp với định nghĩa trong VideoEngine.py
         final_path = self.video_eng.assemble_video(
-            scene_paths=scene_clips, 
+            scene_clips=scene_clips, 
             output_filename=output_filename, 
             target_dir=output_dir
         )
-
         
-        
-        if final_path and progress_callback:
+        if progress_callback:
             progress_callback(100, "Sản xuất video thành công!")
         
         return final_path

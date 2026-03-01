@@ -6,10 +6,9 @@ from moviepy.editor import (
     CompositeVideoClip, CompositeAudioClip, 
     concatenate_videoclips
 )
-# from drawers import InterfaceDrawers
+from .drawers import InterfaceDrawers
 from config import config
 # from .drawers import draw_vsc, draw_cmd, draw_excel, draw_mindmap, draw_document
-from .drawers import get_drawer
 
 class VideoEngine:
     def __init__(self):
@@ -46,7 +45,7 @@ class VideoEngine:
         wrapped_text = self.wrap_text(text, font, size[0] - 300)
         bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font, align="center")
         text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
-        pos_x, pos_y = (size[0] - text_w) / 2, size[1] - text_h - 100 
+        pos_x, pos_y = (size[0] - text_w) / 2, size[1] - text_h - 100 # Đẩy cao hơn tí tránh taskbar
 
         padding = 30
         draw.rectangle([(pos_x - padding, pos_y - padding), (pos_x + text_w + padding, pos_y + text_h + padding)], fill=(0, 0, 0, 160))
@@ -54,15 +53,14 @@ class VideoEngine:
         return np.array(img)
 
     def create_scene(self, text, audio_path, scene_type="vsc", index=0, workspace="", **kwargs):
-        """Hàm điều phối: Render từng cảnh đơn lẻ"""
+        """Hàm điều phối: Render từng cảnh đơn lẻ để đảm bảo Audio Reader không bị None"""
         duration = 5.0
         audio = None
         
-        # CHỖ NÀY QUAN TRỌNG: Định nghĩa s_type ngay từ đầu để toàn bộ hàm create_scene đều dùng được
-        s_type = str(scene_type).lower().strip()
-        
+        # 1. Khởi tạo Audio gốc (Giọng đọc)
         if audio_path and os.path.exists(audio_path):
             try:
+                # Thêm fps=44100 để đồng bộ chuẩn âm thanh
                 audio = AudioFileClip(audio_path, fps=44100)
                 duration = max(audio.duration, 1.0)
             except Exception as e:
@@ -71,7 +69,12 @@ class VideoEngine:
         content = kwargs.get('content', '')
         title = kwargs.get('title', 'HƯỚNG DẪN HỌC TẬP')
 
+        # 2. Hàm vẽ frame
+        # Tìm đến hàm make_frame bên trong create_scene và sửa như sau:
         def make_frame(t):
+            # Đảm bảo scene_type không bị dính khoảng trắng hay chữ hoa chữ thường
+            s_type = str(scene_type).lower().strip()
+            
             params = {
                 't': t, 
                 'duration': duration,
@@ -81,23 +84,37 @@ class VideoEngine:
             }
 
             try:
-                # 1. Lấy hàm vẽ tương ứng từ s_type
-                draw_func = get_drawer(s_type)
+                # 1. Kiểm tra các loại giao diện
+                if s_type in ["cmd", "terminal", "cmd_overlay"]:
+                    frame = InterfaceDrawers.draw_cmd(**params)
                 
-                # 2. Thực thi hàm đó
-                frame = draw_func(**params)
+                elif s_type == "doc":
+                    frame = InterfaceDrawers.draw_document(**params)
+                    
+                elif s_type == "excel":
+                    frame = InterfaceDrawers.draw_excel(**params)
+                    
+                else:
+                    # Mặc định luôn là VSC để tránh trả về None
+                    frame = InterfaceDrawers.draw_vsc(**params)
 
-                # 3. Check an toàn
+                # 2. KIỂM TRA CUỐI CÙNG: Nếu hàm vẽ lỡ tay trả về None
                 if frame is None:
+                    print(f"⚠️ Cảnh báo: Hàm vẽ {s_type} trả về None tại t={t}. Dùng frame đen dự phòng.")
+                    import numpy as np
                     return np.zeros((1080, 1920, 3), dtype=np.uint8)
+                    
                 return frame
 
             except Exception as e:
-                print(f"❌ Lỗi tại make_frame cảnh {index}: {e}")
+                print(f"❌ Lỗi nghiêm trọng tại make_frame cảnh {index} (t={t}): {e}")
+                import numpy as np
                 return np.zeros((1080, 1920, 3), dtype=np.uint8)
 
+        # 3. Tạo Main Video Clip
         main_clip = VideoClip(make_frame, duration=duration).set_fps(self.fps)
 
+        # 4. Chèn Subtitle
         try:
             sub_img = self.create_text_image(text)
             sub_clip = ImageClip(sub_img).set_duration(duration).set_position(("center", "bottom"))
@@ -105,24 +122,28 @@ class VideoEngine:
         except:
             final_clip = main_clip
 
-        # MIX AUDIO
+        # 5. MIX AUDIO - ĐÂY LÀ CHỖ DỄ LỖI NHẤT
         audio_list = []
         if audio:
             audio_list.append(audio)
+            
+            # Tiếng gõ phím
             kb_path = "assets/keyboard.mp3"
-            # s_type ở đây giờ đã tồn tại, không còn lỗi undefined nữa
-            if s_type in ["vsc", "cmd", "terminal"] and os.path.exists(kb_path):
+            if scene_type == "vsc" and os.path.exists(kb_path):
                 try:
+                    # Ép chuẩn fps cho âm thanh gõ phím
                     kb_audio = AudioFileClip(kb_path, fps=44100).subclip(0, min(duration, 5.0)).volumex(0.1)
                     audio_list.append(kb_audio)
-                except: 
-                    pass
+                except: pass
         
         if audio_list:
             final_clip.audio = CompositeAudioClip(audio_list)
         
         final_clip.duration = duration
+
+        # 6. KẾT XUẤT CẢNH TẠM (Dùng đường dẫn tuyệt đối, không dấu nếu có thể)
         temp_filename = os.path.join(workspace, f"temp_scene_{index}.mp4")
+        print(f"🎥 Đang kết xuất cảnh đơn lẻ {index}...")
         
         try:
             final_clip.write_videofile(
@@ -131,12 +152,13 @@ class VideoEngine:
                 codec="libx264", 
                 audio_codec="aac", 
                 logger=None,
-                threads=1 
+                threads=1 # Để threads=1 khi render cảnh đơn lẻ giúp tránh lỗi tranh chấp reader
             )
         except Exception as e:
             print(f"❌ Render cảnh {index} thất bại: {e}")
             return None
 
+        # GIẢI PHÓNG BỘ NHỚ
         if final_clip.audio: final_clip.audio.close()
         final_clip.close()
         if audio: audio.close()

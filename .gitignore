@@ -13,21 +13,29 @@ include/
 lib/
 share/
 
-# 3. Python rác
+# 3. Python rác & Caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.python-version
+__temp__*
+*.tmp
 
 # 4. Streamlit & Logs
 .streamlit/config.toml
 *.log
 
-# 5. Dữ liệu và Vector DB (Nếu mày không muốn đẩy cả nghìn file rác lên)
+# 5. Dữ liệu bài học và Workspace (CHỖ MÀY CẦN THÊM)
+# Tránh đẩy hàng GB video/ảnh thô lên GitHub
+storage/courses/
+storage/workspace/
 data/
 chroma_db/
 vector_store/
 faiss_index/
+vector_db/
+assets/
 
 # 6. File rác hệ thống và IDE
 .vscode/
@@ -35,7 +43,7 @@ faiss_index/
 .DS_Store
 Thumbs.db
 
-# --- Build và EXE (PyInstaller, Nuitka, v.v.) ---
+# 7. Build và EXE (PyInstaller, Nuitka, v.v.)
 build/
 dist/
 *.spec
@@ -43,26 +51,16 @@ dist/
 *.msi
 *.bin
 
-# Thư mục tạm khi chạy exe
-_pycache_/
-.python-version
-
-# Database
-vector_db/
-
-# --- Video & Audio Output ---
+# 8. Video & Audio Output (Sản phẩm cuối)
 *.mp4
 *.avi
 *.mov
 *.mkv
-
-# --- Temporary Assets & Audio ---
-temp_audio/
 outputs/
+
+# 9. Temporary Assets & Audio (File trung gian)
+temp_audio/
+assets/temp/
 *.mp3
 *.wav
 *.m4a
-
-# --- MoviePy & Media cache ---
-__temp__*
-*.tmp
